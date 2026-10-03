@@ -3,6 +3,7 @@ const sections = document.querySelectorAll('main section[id]');
 const navContainer = document.getElementById('nav-links');
 const navToggle = document.querySelector('.mobile-nav-toggle');
 
+// Active section navigation
 const sectionObserver = new IntersectionObserver((entries) => {
   entries.forEach((entry) => {
     if (!entry.isIntersecting) return;
@@ -11,6 +12,7 @@ const sectionObserver = new IntersectionObserver((entries) => {
 }, { rootMargin: '-35% 0px -55% 0px', threshold: 0 });
 sections.forEach((section) => sectionObserver.observe(section));
 
+// Mobile navigation
 navToggle?.addEventListener('click', () => {
   const isOpen = navContainer.classList.toggle('open');
   navToggle.setAttribute('aria-expanded', String(isOpen));
@@ -20,6 +22,7 @@ navLinks.forEach((link) => link.addEventListener('click', () => {
   navToggle?.setAttribute('aria-expanded', 'false');
 }));
 
+// Soft reveal animation
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 if (!reduceMotion) {
   const revealObserver = new IntersectionObserver((entries, observer) => {
@@ -34,33 +37,25 @@ if (!reduceMotion) {
   document.querySelectorAll('.reveal').forEach((el) => el.classList.add('visible'));
 }
 
+// Avatar + orbital parallax
 const heroVisual = document.querySelector('.hero-visual');
-const avatarFigure = document.querySelector('.avatar-figure');
 const avatar = document.querySelector('.avatar-image');
-const eyePupils = document.querySelectorAll('.eye-pupil');
 const orbits = document.querySelectorAll('.orbital');
 const skillPills = document.querySelectorAll('.skill-float');
 
-if (heroVisual && avatarFigure && avatar && !reduceMotion) {
+if (heroVisual && avatar && !reduceMotion) {
   let tx = 0, ty = 0, cx = 0, cy = 0;
   const updateTarget = (clientX, clientY) => {
     const rect = heroVisual.getBoundingClientRect();
     tx = Math.max(-1, Math.min(1, (clientX - rect.left) / rect.width * 2 - 1));
     ty = Math.max(-1, Math.min(1, (clientY - rect.top) / rect.height * 2 - 1));
   };
-
   heroVisual.addEventListener('pointermove', (event) => updateTarget(event.clientX, event.clientY));
   heroVisual.addEventListener('pointerleave', () => { tx = 0; ty = 0; });
-
   const frame = () => {
     cx += (tx - cx) * .075;
     cy += (ty - cy) * .075;
-    avatarFigure.style.transform = `translate3d(${cx * 11}px, ${cy * 8}px, 0) rotate(${cx * 1.8}deg) scale(1.015)`;
-    eyePupils.forEach((pupil, index) => {
-      const x = cx * (index === 0 ? 5.0 : 5.4);
-      const y = cy * 3.8;
-      pupil.style.transform = `translate(-50%, -50%) translate3d(${x}px, ${y}px, 0)`;
-    });
+    avatar.style.transform = `translate3d(${cx * 11}px, ${cy * 8}px, 0) rotate(${cx * 1.8}deg) scale(1.015)`;
     orbits.forEach((orbit, index) => orbit.style.translate = `${cx * (index + 1) * 3}px ${cy * (index + 1) * 2}px`);
     skillPills.forEach((pill, index) => {
       const x = cx * (index % 2 ? -6 : 7);
@@ -72,6 +67,7 @@ if (heroVisual && avatarFigure && avatar && !reduceMotion) {
   frame();
 }
 
+// Deterministic “Ask Siddhant” assistant — no LLM, no API cost
 const assistantPanel = document.getElementById('assistantPanel');
 const askOpen = document.getElementById('askOpen');
 const askClose = document.getElementById('askClose');
@@ -98,12 +94,14 @@ const answers = [
 
 function getAnswer(question) {
   const q = question.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
-  if (/^(hi|hello|hey|hiya|howdy|hola|namaste|good morning|good afternoon|good evening)$/.test(q)) return greetingAnswer;
+  if (/^(hi|hello|hey|hiya|howdy|hola|namaste|good morning|good afternoon|good evening)$/.test(q)) {
+    return greetingAnswer;
+  }
   let best = null, bestScore = 0;
   answers.forEach((item) => {
     const score = item.keys.reduce((total, key) => {
       const needle = key.toLowerCase();
-      const hit = needle.includes(' ') ? q.includes(needle) : new RegExp(`\\b${needle.replace(/[.*+?^\${}()|[\]\\\\]/g, '\\\\$&')}\\b`).test(q);
+      const hit = needle.includes(' ') ? q.includes(needle) : new RegExp(`\\b${needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`).test(q);
       return total + (hit ? 1 : 0);
     }, 0);
     if (score > bestScore) { bestScore = score; best = item.answer; }
@@ -118,7 +116,9 @@ function addMessage(text, type) {
   assistantMessages.appendChild(bubble);
   requestAnimationFrame(() => bubble.classList.add('message-visible'));
   assistantMessages.scrollTop = assistantMessages.scrollHeight;
+  return bubble;
 }
+
 function showTyping() {
   const typing = document.createElement('div');
   typing.className = 'assistant-bubble assistant typing-indicator message-visible';
@@ -128,6 +128,7 @@ function showTyping() {
   assistantMessages.scrollTop = assistantMessages.scrollHeight;
   return typing;
 }
+
 function askQuestion(question) {
   const trimmed = question.trim();
   if (!trimmed) return;
@@ -135,7 +136,10 @@ function askQuestion(question) {
   const typing = showTyping();
   window.setTimeout(() => {
     typing.classList.add('typing-exit');
-    window.setTimeout(() => { typing.remove(); addMessage(getAnswer(trimmed), 'assistant'); }, 180);
+    window.setTimeout(() => {
+      typing.remove();
+      addMessage(getAnswer(trimmed), 'assistant');
+    }, 180);
   }, 620);
 }
 function setAssistant(open) {
@@ -149,6 +153,7 @@ askClose.addEventListener('click', () => setAssistant(false));
 assistantForm.addEventListener('submit', (event) => { event.preventDefault(); askQuestion(assistantInput.value); assistantInput.value = ''; });
 document.querySelectorAll('[data-question]').forEach((btn) => btn.addEventListener('click', () => askQuestion(btn.dataset.question)));
 
+// Project case-study modal
 const projectData = {
   documentary:{ kicker:'AI / AUTOMATION', title:'AI-Powered Documentary Generator', summary:'An end-to-end AI video generation pipeline that automates content creation from script to final 9:16 video.', tags:['Gemini','n8n','Google Cloud TTS','FFmpeg','REST APIs'], details:['Engineered automated script generation, multimodal scene creation, narration and 9:16 video rendering.','Designed asynchronous media workflows with REST APIs, binary asset processing, scene-level transcoding and job polling.','Automated multi-scene video concatenation for fully automated short-form content generation.'] },
   veritas:{ kicker:'CONVERSATIONAL AI', title:'Veritas AI ( AI-Powered KYC Verification)', summary:'A conversational AI system for guiding users through KYC verification workflows using real-time voice interaction.', tags:['LLMs','Gnani AI','Supabase','Fast API'], details:['Used real-time voice interaction and LLM-based dialogue handling to guide the verification workflow.','Implemented structured data capture and backend integration to streamline verification.','Designed reliable storage of captured user information.'] },
@@ -174,7 +179,7 @@ function openProject(key) {
   document.body.style.overflow='hidden';
 }
 function closeProject() { modal.classList.remove('open'); modal.setAttribute('aria-hidden','true'); document.body.style.overflow=''; }
-document.querySelectorAll('[data-project]').forEach(card => card.addEventListener('click', () => openProject(card.dataset.project)));
+document.querySelectorAll('[data-project]').forEach(card => card.addEventListener('click', (event) => { if (event.target.closest('button')) openProject(card.dataset.project); else openProject(card.dataset.project); }));
 document.getElementById('modalClose').addEventListener('click', closeProject);
 modal.addEventListener('click', (event) => { if (event.target === modal) closeProject(); });
 document.addEventListener('keydown', (event) => { if (event.key === 'Escape') { closeProject(); setAssistant(false); } });
